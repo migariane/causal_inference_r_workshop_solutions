@@ -1,5 +1,5 @@
 ---
-title: "Causal inference is not just a statistics problem"
+title: "La inferencia causal no es solo un problema de estadística"
 format: html
 ---
 
@@ -9,9 +9,9 @@ library(tidyverse)
 library(quartets)
 ```
 
-## Your turn 1
+## Tu turno 1
 
-For each of the following 4 datasets, look at the correlation between `exposure` and `covariate`: 
+Para cada uno de los siguientes 4 datasets, mira la correlación entre `exposure` y `covariate`: 
 
 * `causal_collider`
 * `causal_confounding`
@@ -25,7 +25,7 @@ causal_quartet |>
   summarize(correlation = cor(exposure, covariate))
 ```
 
-For each of the above 4 datasets, create a scatterplot looking at the relationship between `exposure` and `outcome`
+Para cada uno de los anteriores 4 datasets, crea un scatterplot mirando la relación entre `exposure` y `outcome`
 
 ```{r}
 causal_quartet |> 
@@ -35,7 +35,7 @@ causal_quartet |>
   facet_wrap(~ dataset)
 ```
 
-For each of the above 4 datasets, fit a linear model to examine the relationship between the `exposure` and the `outcome`
+Para cada uno de los anteriores 4 datasets, ajusta un modelo lineal para examinar la relación entre la `exposure` y el `outcome`
 
 ```{r}
 causal_quartet |> 
@@ -43,9 +43,9 @@ causal_quartet |>
     summarize(exposure_coef = coef(lm(outcome ~ exposure))[["exposure"]])
 ```
 
-## Your turn 2
+## Tu turno 2
 
-For each of the following 4 datasets, fit a linear linear model examining the relationship between `outcome_followup` and `exposure_baseline` adjusting for `covariate_baseline`: 
+Para cada uno de los siguientes 4 datasets, ajusta un modelo lineal que examine la relación entre `outcome_followup` y `exposure_baseline` ajustando por `covariate_baseline`: 
 
 * `causal_collider_time`
 * `causal_confounding_time`
@@ -57,5 +57,4 @@ causal_quartet_time |>
     group_by(dataset) |> 
     summarize(exposure_coef = coef(lm(outcome_followup ~ exposure_baseline + covariate_baseline))[["exposure_baseline"]])
 ```
-
 

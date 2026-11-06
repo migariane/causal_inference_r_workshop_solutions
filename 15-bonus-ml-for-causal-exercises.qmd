@@ -1,5 +1,5 @@
 ---
-title: "Machine Learning for Causal Inference"
+title: "Aprendizaje Automático para Inferencia Causal"
 format: html
 ---
 
@@ -16,17 +16,17 @@ library(ggdag)
 library(ggokabeito)
 ```
 
-## The Causal Question
+## La Pregunta Causal
 
-We'll be looking at an example using Walt Disney World ride data from the touringplans package.
+Estaremos viendo un ejemplo usando datos de paseos de Walt Disney World del paquete touringplans.
 
-Historically, guests who stayed in a Walt Disney World resort hotel were able to access the park during "Extra Magic Hours" during which the park was closed to all other guests.
-These extra hours could be in the morning or evening.
-The Seven Dwarfs Mine Train is a ride at Walt Disney World's Magic Kingdom. Typically, each day Magic Kingdom may or may not be selected to have these "Extra Magic Hours".
+Históricamente, los huéspedes que se hospedaban en un hotel resort de Walt Disney World podían acceder al parque durante las "Horas Mágicas Extras" durante las cuales el parque estaba cerrado a todos los demás huéspedes.
+Estas horas extra podían ser por la mañana o por la tarde.
+Seven Dwarfs Mine Train es un paseo en el Magic Kingdom de Walt Disney World. Típicamente, cada día Magic Kingdom puede o no ser seleccionado para tener estas "Horas Mágicas Extras".
 
-We are interested in examining the relationship between whether there were "Extra Magic Hours" in the morning and the average wait time for the Seven Dwarfs Mine Train the same day between 9am and 10am.
+Estamos interesados en examinar la relación entre si hubo "Horas Mágicas Extras" por la mañana y el tiempo promedio de espera para Seven Dwarfs Mine Train el mismo día entre las 9am y las 10am.
 
-Below is a proposed DAG for this question.
+A continuación se presenta un DAG propuesto para esta pregunta.
 
 ```{r}
 set.seed(1234)
@@ -37,11 +37,11 @@ coord_dag <- list(
 )
 
 labels <- c(
-  emm = "Extra Magic Morning",
-  wait_posted = "Average wait",
-  season = "Ticket Season",
-  weather = "Historic high temperature",
-  close = "Time park closed"
+  emm = "Horas Mágicas Extras Mañana",
+  wait_posted = "Tiempo promedio de espera",
+  season = "Temporada de boletos",
+  weather = "Temperatura máxima histórica",
+  close = "Hora de cierre del parque"
 )
 
 dagify(
@@ -81,28 +81,28 @@ dagify(
     limits = c(-1.25, 2.25),
     breaks = c(-1, 0, 1, 2),
     labels = c(
-      "\n(one year ago)",
-      "\n(6 months ago)",
-      "\n(3 months ago)",
-      "9am - 10am\n(Today)"
+      "\n(hace un año)",
+      "\n(hace 6 meses)",
+      "\n(hace 3 meses)",
+      "9am - 10am\n(Hoy)"
     )
   )
 ```
 
-Here we are proposing that there are three confounders: the historic high temperature on the day, the time the park closed, and the ticket season: value, regular, or peak.
+Aquí estamos proponiendo que hay tres confusores: la temperatura máxima histórica del día, la hora de cierre del parque y la temporada de boletos: valor, regular o pico.
 
-## Review: IPW and G-computation
+## Revisión: IPW y G-computación
 
-Before using machine learning methods, let's review how we implement IPW and G-computation with parametric models. IPW and G-computation are two estimators we can use to estimate our estimand, the average treatment effect (ATE), in the presence of confounding.
+Antes de usar métodos de aprendizaje automático, repasemos cómo implementamos IPW y G-computación con modelos paramétricos. IPW y G-computación son dos estimadores que podemos usar para estimar nuestro estimando, el efecto promedio del tratamiento (ATE), en presencia de confusores.
 
-### Inverse Probability Weighting (IPW)
+### Ponderación por probabilidad inversa (IPW)
 
-In IPW, we first fit a propensity score model to estimate the probability of treatment given confounders. The goal is to create a pseudo-population where treatment assignment is independent of confounders. We then calculate weights based on these propensity scores and fit a weighted outcome model to estimate the average treatment effect (ATE).
+En IPW, primero ajustamos un modelo de puntuación de propensión para estimar la probabilidad de tratamiento dado los confusores. El objetivo es crear una pseudo-población donde la asignación al tratamiento sea independiente de los confusores. Luego calculamos pesos basados en estas puntuaciones de propensión y ajustamos un modelo de resultado ponderado para estimar el efecto promedio del tratamiento (ATE).
 
-The algorithm is:
-1. Fit a propensity score model to estimate the probability of treatment given confounders.
-2. Calculate weights: for treated units, (for the ATE, it is `1 / propensity score` for the treated units, and `1 / (1 - propensity score)` for the control units; `propensity::wt_ate()` will calculate this for you.
-3. Fit a weighted outcome model using the calculated weights. This model only includes the treatment variable and no confounders, as the weights adjust for confounding.
+El algoritmo es:
+1. Ajusta un modelo de puntuación de propensión para estimar la probabilidad de tratamiento dado los confusores.
+2. Calcula los pesos: para las unidades tratadas, (para el ATE, es `1 / puntuación de propensión` para las unidades tratadas, y `1 / (1 - puntuación de propensión)` para las unidades de control; `propensity::wt_ate()` calculará esto por ti.
+3. Ajusta un modelo de resultado ponderado usando los pesos calculados. Este modelo solo incluye la variable de tratamiento y ningún confusor, ya que los pesos ajustan por el confusión.
 
 ```{r}
 # Prepare data: filter to 9am wait times
@@ -138,15 +138,15 @@ ipw_model <- lm(
 tidy(ipw_model)
 ```
 
-### G-computation
+### G-computación
 
-In G-computation, we fit an outcome model that includes the exposure and confounders. We then create two counterfactual datasets: one where everyone is treated and one where everyone is control. We use the fitted outcome model to predict outcomes under each scenario and calculate the ATE as the average difference in predicted outcomes.
+En G-computación, ajustamos un modelo de resultado que incluye la exposición y los confusores. Luego creamos dos conjuntos de datos contrafactuales: uno donde todos son tratados y otro donde todos son control. Usamos el modelo de resultado ajustado para predecir resultados bajo cada escenario y calculamos el ATE como la diferencia media en los resultados predichos.
 
-The algorithm is:
-1. Fit an outcome model with the exposure and confounders.
-2. Clone the dataset to create two scenarios: one where everyone is treated and one where everyone is control.
-3. Predict outcomes under each scenario using the fitted outcome model.
-4. Calculate the average treatment effect (ATE) as the mean difference in predicted outcomes.
+El algoritmo es:
+1. Ajusta un modelo de resultado con la exposición y los confusores.
+2. Clona el conjunto de datos para crear dos escenarios: uno donde todos son tratados y otro donde todos son control.
+3. Predice los resultados bajo cada escenario usando el modelo de resultado ajustado.
+4. Calcula el efecto promedio del tratamiento (ATE) como la diferencia media de los resultados predichos.
 
 ```{r}
 # Step 1: Fit outcome model with exposure and all confounders
@@ -177,11 +177,11 @@ ate_gcomp <- mean(pred_treated - pred_control)
 ate_gcomp
 ```
 
-## Your Turn 1
+## Tu Turno 1
 
-1. First, create a character vector `sl_library` that specifies the following algorithms: "SL.glm", "SL.ranger", "SL.xgboost", "SL.gam". Then, Fit a SuperLearner for the exposure model using the `SuperLearner` package. The predictors for this model should be the confounders identified in the DAG: `park_ticket_season`, `park_close`, and `park_temperature_high`. The outcome is `park_extra_magic_morning`.
-2. Fit a SuperLearner for the outcome model using the `SuperLearner` package. The predictors for this model should be the confounders plus the exposure: `park_extra_magic_morning`, `park_ticket_season`, `park_close`, and `park_temperature_high`. The outcome is `wait_minutes_posted_avg`.
-3. Inspect the fitted SuperLearner objects.
+1. Primero, crea un vector de caracteres `sl_library` que especifique los siguientes algoritmos: "SL.glm", "SL.ranger", "SL.xgboost", "SL.gam". Luego, ajusta un SuperLearner para el modelo de exposición usando el paquete `SuperLearner`. Los predictores para este modelo deben ser los confusores identificados en el DAG: `park_ticket_season`, `park_close`, y `park_temperature_high`. El resultado es `park_extra_magic_morning`.
+2. Ajusta un SuperLearner para el modelo de resultado usando el paquete `SuperLearner`. Los predictores para este modelo deben ser los confusores más la exposición: `park_extra_magic_morning`, `park_ticket_season`, `park_close`, y `park_temperature_high`. El resultado es `wait_minutes_posted_avg`.
+3. Inspecciona los objetos SuperLearner ajustados.
 
 ```{r}
 set.seed(1234)
@@ -216,9 +216,9 @@ outcome_sl <- SuperLearner(
 outcome_sl
 ```
 
-4. Inspect the predictions from the fitted SuperLearner models.
-5. Check AUC with the `yardstick` package for the exposure model. For this, we need a data frame with the true exposure values and predicted propensity scores to use with `roc_auc()`.
-6. Check RMSE with the `yardstick` package for the outcome model. For this, we need a data frame with the true outcome values and predicted outcomes to use with `rmse()`.
+4. Inspecciona las predicciones de los modelos SuperLearner ajustados.
+5. Verifica el AUC con el paquete `yardstick` para el modelo de exposición. Para esto, necesitamos un dataframe con los valores reales de la exposición y las puntuaciones de propensión predichas para usar con `roc_auc()`.
+6. Verifica el RMSE con el paquete `yardstick` para el modelo de resultado. Para esto, necesitamos un dataframe con los valores reales del resultado y los resultados predichos para usar con `rmse()`.
 
 ```{r}
 propensity_scores <- predict(exposure_sl, type = "response")$pred[, 1]
@@ -245,7 +245,7 @@ outcome_rmse <- rmse(outcome_results, truth, predicted)
 outcome_rmse
 ```
 
-**Stretch goal**: Add more algorithms to the SuperLearner and fit the models using the new stack of algorithms.
+**Objetivo adicional**: Agrega más algoritmos al SuperLearner y ajusta los modelos usando el nuevo conjunto de algoritmos.
 
 ```{r}
 sl_library_extended <- c(
@@ -285,11 +285,11 @@ outcome_sl_extended <- SuperLearner(
 outcome_sl_extended
 ```
 
-## Your Turn 2
+## Tu Turno 2
 
-1. Implement Inverse Probability Weighting (IPW) using the fitted SuperLearner for the exposure model.
- - First, calculate the ATE weights using `wt_ate()` with the predicted propensity scores from the fitted SuperLearner.
- - Then, fit a weighted outcome model using `lm()` with `wait_minutes_posted_avg` as the outcome and `park_extra_magic_morning` as the only predictor, using the ATE weights in the `weights` argument of `lm()`.
+1. Implementa la Ponderación por probabilidad inversa (IPW) usando el SuperLearner ajustado para el modelo de exposición.
+ - Primero, calcula los pesos ATE usando `wt_ate()` con las puntuaciones de propensión predichas del SuperLearner ajustado.
+ - Luego, ajusta un modelo de resultado ponderado usando `lm()` con `wait_minutes_posted_avg` como el resultado y `park_extra_magic_morning` como el único predictor, usando los pesos ATE en el argumento `weights` de `lm()`.
 
 ```{r}
 # IPW with SuperLearner propensity scores
@@ -318,10 +318,10 @@ tidy(ipw_model) |>
   filter(term == "park_extra_magic_morning")
 ```
 
-2. Implement G-computation using the fitted SuperLearner for the outcome model.
-  - First, create two counterfactual datasets: one where everyone is treated (`park_extra_magic_morning` = 1) and one where everyone is control (`park_extra_magic_morning` = 0).
-  - Then, predict outcomes under each scenario using the fitted SuperLearner for the outcome model.
-  - Finally, calculate the average treatment effect (ATE) as the mean difference in predicted outcomes between the treated and control scenarios.
+2. Implementa G-computación usando el SuperLearner ajustado para el modelo de resultado.
+   - Primero, crea dos conjuntos de datos contrafactuales: uno donde todos son tratados (`park_extra_magic_morning` = 1) y otro donde todos son control (`park_extra_magic_morning` = 0).
+   - Luego, predice los resultados bajo cada escenario usando el SuperLearner ajustado para el modelo de resultado.
+   - Finalmente, calcula el efecto promedio del tratamiento (ATE) como la diferencia media en los resultados predichos entre los escenarios tratados y de control.
 
 ```{r}
 # G-computation with SuperLearner outcome model
@@ -353,12 +353,12 @@ gcomp_ate <- mean(pred_treated - pred_control)
 gcomp_ate
 ```
 
-## Your Turn 3
+## Tu Turno 3
 
-1. First, bound the continuous outcome to [0,1] range for TMLE. Store the min and max values for later transformation back.
-2. Fit a new SuperLearner on the bounded outcome specifically for TMLE.
-3. Get initial predictions from this bounded SuperLearner (they will already be in [0,1] scale).
-4. Create `initial_pred_observed`, which contains the predicted values for each observation based on their actual treatment assignment.
+1. Primero, limita el resultado continuo al rango [0,1] para TMLE. Almacena los valores mínimo y máximo para transformar de nuevo más tarde.
+2. Ajusta un nuevo SuperLearner en el resultado limitado específicamente para TMLE.
+3. Obtén las predicciones iniciales de este SuperLearner limitado (ya estarán en escala [0,1]).
+4. Crea `initial_pred_observed`, que contiene los valores predichos para cada observación basados en su asignación de tratamiento real.
 
 ```{r}
 # Step 1: Bound the continuous outcome to [0,1] for TMLE
@@ -391,7 +391,7 @@ initial_pred_observed <- ifelse(
 )
 ```
 
-5. Create the "clever covariate" using the propensity scores from the fitted SuperLearner model. This will be used in the TMLE targeting step. For treated units, it should be `1 /propensity_scores`, and for control units, it should be `-1 / (1 - propensity_scores)`.
+5. Crea el "coeficiente astuto" (clever covariate) usando las puntuaciones de propensión del SuperLearner ajustado. Este se usará en el paso de targeting de TMLE. Para las unidades tratadas, debe ser `1 / puntuaciones_de_propensión`, y para las unidades de control, `-1 / (1 - puntuaciones_de_propensión)`.
 
 ```{r}
 # Step 2: Create the "clever covariate": this is the key to TMLE
@@ -407,8 +407,8 @@ clever_covariate <- ifelse(
 )
 ```
 
-6. Fit a fluctuation model with the bounded outcome, using `qlogis(initial_pred_observed)` as an offset and the clever covariate as a predictor (with no intercept). Use binomial family for the model.
-7. Get the fluctuation parameter `epsilon` from the model coefficients; this is the coefficient for the clever covariate. 
+6. Ajusta un modelo de fluctuación con el resultado limitado, usando `qlogis(initial_pred_observed)` como un offset y el coeficiente astuto como predictor (sin intercepto). Usa familia binomial para el modelo.
+7. Obtén el parámetro de fluctuación `epsilon` de los coeficientes del modelo; este es el coeficiente para el coeficiente astuto. 
 
 ```{r}
 # Step 3: The targeting step - a small parametric fluctuation of initial estimates
@@ -429,9 +429,9 @@ epsilon <- coef(fluctuation_model)
 epsilon
 ```
 
-8. Now that we've calculated the fluctuation parameter, we can update our predictions to obtain targeted predictions that are minimize the bias-variance tradeoff for the average treatment effect. 
-   - For treated units, we add `epsilon * (1 / propensity_scores)`.
-   - For control units, we add `epsilon * (-1 / (1 - propensity_scores)`.
+8. Ahora que hemos calculado el parámetro de fluctuación, podemos actualizar nuestras predicciones para obtener predicciones dirigidas que minimicen el compromiso sesgo-varianza para el efecto promedio del tratamiento. 
+   - Para las unidades tratadas, añade `epsilon * (1 / puntuaciones_de_propensión)`.
+   - Para las unidades de control, añade `epsilon * (-1 / (1 - puntuaciones_de_propensión)`.
 
 ```{r}
 # Step 4: Update our predictions using the fluctuation parameter
@@ -455,7 +455,7 @@ targeted_pred_observed <- ifelse(
 )
 ```
 
-9. Let's visualize the initial vs targeted individual-level predictions for treated and control units. Set the x-axis to the initial predictions and the y-axis to the targeted predictions. For the first plot, use `initial_pred_treated` and `targeted_pred_treated`, and for the second plot, use `initial_pred_control` and `targeted_pred_control`. 
+9. Visualicemos las predicciones iniciales vs dirigidas a nivel individual para unidades tratadas y de control. Establece el eje x a las predicciones iniciales y el eje y a las predicciones dirigidas. Para el primer gráfico, usa `initial_pred_treated` y `targeted_pred_treated`, y para el segundo gráfico, usa `initial_pred_control` y `targeted_pred_control`. 
 
 ```{r}
 # plot the initial vs targeted individual-level predictions for treated units
@@ -464,8 +464,8 @@ ggplot(seven_dwarfs, aes(x = initial_pred_treated, y = targeted_pred_treated)) +
   # perfect prediction line: y = x
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
   labs(
-    x = "Initial Predictions (Treated)",
-    y = "Targeted Predictions (Treated)"
+    x = "Predicciones Iniciales (Tratadas)",
+    y = "Predicciones Dirigidas (Tratadas)"
   ) + 
   theme_minimal()
 
@@ -475,15 +475,15 @@ ggplot(seven_dwarfs, aes(x = initial_pred_control, y = targeted_pred_control)) +
   # perfect prediction line: y = x
   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
   labs(
-    x = "Initial Predictions (Control)",
-    y = "Targeted Predictions (Control)"
+    x = "Predicciones Iniciales (Control)",
+    y = "Predicciones Dirigidas (Control)"
   ) + 
   theme_minimal()
 ```
 
-## Your Turn 4
+## Tu Turno 4
 
-1. Let's compare the mean difference in **initial** predictions between treated and control units, and the mean difference in **targeted** predictions between treated and control units. The first calculation is identical to the g-computation ATE estimate. The second calculation is the TMLE estimate. Remember to transform back to the original scale!
+1. Comparamos la diferencia media en las predicciones **iniciales** entre unidades tratadas y de control, y la diferencia media en las predicciones **dirigidas** entre unidades tratadas y de control. El primer cálculo es idéntico a la estimación ATE de g-computación. El segundo cálculo es la estimación TMLE. Recuerda transformar de nuevo a la escala original!
 
 ```{r}
 # Compare: initial estimate (good prediction, possibly biased for causal effect)
@@ -499,7 +499,7 @@ targeted_ate <- mean(targeted_pred_treated - targeted_pred_control) * (max_y - m
 targeted_ate
 ```
 
-2. Now let's calculate its standard error using the efficient influence curve (IC). The IC captures the uncertainty in our estimate and allows us to construct valid confidence intervals. There's no code to change here, just read through the comments to understand how the IC is constructed and how it relates to the TMLE estimate.
+2. Ahora calculamos su error estándar usando la curva de influencia eficiente (IC). La IC captura la incertidumbre en nuestra estimación y nos permite construir intervalos de confianza válidos. No hay código que cambiar aquí, solo lee los comentarios para entender cómo se construye la IC y cómo se relaciona con la estimación TMLE.
 
 ```{r}
 # Calculate the efficient influence curve (IC) for each observation
@@ -530,9 +530,9 @@ tibble(
 )
 ```
 
-## Bonus: Fit with `tmle::tmle()`
+## Bonus: Ajustar con `tmle::tmle()`
 
-R has several packages for TMLE: tmle, ltmle, and tmle3, all with slightly different designs and capabilities. We'll use the `tmle` package here, which is quite simple and works with SuperLearner.
+R tiene varios paquetes para TMLE: tmle, ltmle y tmle3, todos con diseños y capacidades ligeramente diferentes. Usaremos el paquete `tmle` aquí, que es bastante simple y funciona con SuperLearner.
 
 ```{r}
 confounders <- seven_dwarfs |> 
@@ -557,15 +557,15 @@ summary(tmle_result)
 
 ***
 
-# Take aways
+# Lecciones aprendidas
 
-* Machine learning methods can improve causal inference by reducing bias and variance in treatment effect estimates.
-* SuperLearner provides a flexible framework for combining multiple machine learning algorithms.
-* TMLE provides a robust framework for estimating treatment effects while addressing bias and variance.
-* The targeting step in TMLE is crucial for improving estimates and reducing bias
+* Los métodos de aprendizaje automático pueden mejorar la inferencia causal al reducir el sesgo y la varianza en las estimaciones del efecto del tratamiento.
+* SuperLearner proporciona un marco flexible para combinar múltiples algoritmos de aprendizaje automático.
+* TMLE proporciona un marco robusto para estimar efectos del tratamiento mientras aborda el sesgo y la varianza.
+* El paso de targeting en TMLE es crucial para mejorar las estimaciones y reducir el sesgo
 
 
-# Appendix: Bootstrapping for IPW and G-computation
+# Apéndice: Bootstrapping para IPW y G-computación
 
 ## IPW
 
@@ -603,7 +603,7 @@ int_bca(ipw_boot, results, .fn = fit_ipw) |>
   filter(term == "park_extra_magic_morning")
 ```
 
-## G-computation
+## G-computación
 
 ```{r}
 fit_gcomp <- function(split, ...) {
@@ -635,4 +635,3 @@ gcomp_boot <- bootstraps(seven_dwarfs, 1000, apparent = TRUE) |>
 
 int_bca(gcomp_boot, results, .fn = fit_gcomp)
 ```
-

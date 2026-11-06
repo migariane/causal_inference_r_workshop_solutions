@@ -1,5 +1,5 @@
 ---
-title: "Propensity Scores"
+title: "Puntuaciones de Propensión"
 format: html
 ---
 
@@ -12,17 +12,17 @@ library(ggdag)
 library(ggokabeito)
 ```
 
-For Your Turn, we'll be looking at an example using Walt Disney World ride data from the touringplans package.
+Para Tu turno, estaremos viendo un ejemplo usando datos de paseos de Walt Disney World del paquete touringplans.
 
-Historically, guests who stayed in a Walt Disney World resort hotel were able to access the park during "Extra Magic Hours" during which the park was closed to all other guests.
-These extra hours could be in the morning or evening.
-The Seven Dwarfs Mine Train is a ride at Walt Disney World's Magic Kingdom. Typically, each day Magic Kingdom may or may not be selected to have these "Extra Magic Hours".
+Históricamente, los huéspedes que se hospedaban en un hotel resort de Walt Disney World podían acceder al parque durante las "Horas Mágicas Extras" durante las cuales el parque estaba cerrado a todos los demás huéspedes.
+Estas horas extra podían ser por la mañana o por la tarde.
+Seven Dwarfs Mine Train es un paseo en el Magic Kingdom de Walt Disney World. Típicamente, cada día Magic Kingdom puede o no ser seleccionado para tener estas "Horas Mágicas Extras".
 
-We are interested in examining the relationship between whether there were "Extra Magic Hours" in the morning and the average wait time for the Seven Dwarfs Mine Train the same day between 9am and 10am.
+Estamos interesados en examinar la relación entre si hubo "Horas Mágicas Extras" por la mañana y el tiempo promedio de espera para Seven Dwarfs Mine Train el mismo día entre las 9am y las 10am.
 
-Below is a proposed DAG for this question.
+A continuación se presenta un DAG propuesto para esta pregunta.
 
-*Render this document to see the DAG or refer to the slides*.
+*Renderiza este documento para ver el DAG o consulta las diapositivas*.
 
 ```{r}
 set.seed(1234)
@@ -33,11 +33,11 @@ coord_dag <- list(
 )
 
 labels <- c(
-  x = "Extra Magic Morning",
-  y = "Average wait",
-  Season = "Ticket Season",
-  weather = "Historic high temperature",
-  close = "Time park closed"
+  x = "Horas Mágicas Extras Mañana",
+  y = "Tiempo promedio de espera",
+  Season = "Temporada de boletos",
+  weather = "Temperatura histórica máxima",
+  close = "Hora de cierre del parque"
 )
 
 dagify(
@@ -77,40 +77,40 @@ dagify(
     limits = c(-1.25, 2.25),
     breaks = c(-1, 0, 1, 2),
     labels = c(
-      "\n(one year ago)",
-      "\n(6 months ago)",
-      "\n(3 months ago)",
-      "5pm - 6pm\n(Today)"
+      "\n(hace un año)",
+      "\n(hace 6 meses)",
+      "\n(hace 3 meses)",
+      "5pm - 6pm\n(Hoy)"
     )
   )
 ```
 
-Here we are proposing that there are three confounders: the historic high temperature on the day, the time the park closed, and the ticket season: value, regular, or peak.
+Aquí estamos proponiendo que hay tres confusores: la temperatura máxima histórica del día, la hora de cierre del parque y la temporada de boletos: valor, regular o pico.
 
-We can build a propensity score model using the `seven_dwarfs_train_2018` data set from the touringplans package.
-Each row of this dataset contains information about the Seven Dwarfs Mine Train during a certain hour on a given day.
-First we need to subset the data to only include average wait times between 9 and 10 am.
+Podemos construir un modelo de puntuación de propensión usando el conjunto de datos `seven_dwarfs_train_2018` del paquete touringplans.
+Cada fila de este conjunto de datos contiene información sobre Seven Dwarfs Mine Train durante una hora determinada en un día dado.
+Primero necesitamos subconjuntar los datos para incluir solo los tiempos promedio de espera entre las 9 y las 10 am.
 
 ```{r}
 seven_dwarfs <- seven_dwarfs_train_2018 |>
   filter(wait_hour == 9)
 ```
 
-Here's a data dictionary of the variables we need in the `seven_dwarfs` data set:
+Aquí hay un diccionario de datos de las variables que necesitamos en el conjunto de datos `seven_dwarfs`:
 
-| Variable                       | Column in `seven_dwarfs` |
-|--------------------------------|--------------------------|
-| Posted Wait Time (outcome)     | `wait_minutes_posted_avg`           |
-| Extra Magic Morning (exposure) | `park_magic_morning`    |
-| Ticket Season                  | `park_ticket_season`      |
-| Closing Time                   | `park_close`                  |
-| Historic Temperature           | `park_temperature_high`        |
+| Variable                       | Columna en `seven_dwarfs` |
+|--------------------------------|---------------------------|
+| Tiempo de espera publicado (resultado)     | `wait_minutes_posted_avg`           |
+| Horas Mágicas Extras Mañana (exposición) | `park_magic_morning`    |
+| Temporada de boletos                  | `park_ticket_season`      |
+| Hora de cierre                   | `park_close`                  |
+| Temperatura histórica máxima           | `park_temperature_high`        |
 
-## Your Turn
+## Tu turno
 
-*After updating the code chunks below, change `eval: true` before rendering*
+*Después de actualizar los bloques de código a continuación, cambia `eval: true` antes de renderizar*
 
-Now, fit a propensity score model for `extra_magic_morning` using the above proposed confounders.
+Ahora, ajusta un modelo de puntuación de propensión para `extra_magic_morning` usando los confusores propuestos anteriormente.
 
 ```{r}
 #| eval: true
@@ -121,7 +121,7 @@ propensity_model <- glm(
 )
 ```
 
-Add the propensity scores to the `seven_dwarfs` data set, call this new dataset `df`.
+Agrega las puntuaciones de propensión al conjunto de datos `seven_dwarfs`, llama a este nuevo dataset `df`.
 
 ```{r}
 #| eval: true
@@ -129,10 +129,10 @@ df <- propensity_model |>
   augment(type.predict = "response", data = seven_dwarfs)
 ```
 
-Stretch Goal 1:
+Objetivo adicional 1:
 
-Examine two histograms of the propensity scores, one days with Extra Magic Morning (`park_extra_magic_morning == 1`) and one for days without it (`park_extra_magic_morning == 0`).
-How do these compare?
+Examina dos histogramas de las puntuaciones de propensión, uno para días con Horas Mágicas Extras Mañana (`park_extra_magic_morning == 1`) y otro para días sin ellas (`park_extra_magic_morning == 0`).
+¿Cómo se comparan?
 
 ```{r}
 ggplot(
@@ -140,7 +140,7 @@ ggplot(
   aes(x = .fitted, fill = factor(park_extra_magic_morning))
 ) +
   geom_histogram(bins = 30) +
-  scale_y_continuous("Count") +
-  scale_x_continuous("Propensity Score") +
+  scale_y_continuous("Conteo") +
+  scale_x_continuous("Puntuación de Propensión") +
   scale_fill_manual(values = c("orange", "cornflower blue"))
 ```
